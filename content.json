@@ -1,0 +1,1034 @@
+{
+  "positions": [
+    {
+      "id": "armbar_control",
+      "label": "Armbar control",
+      "key_points": [
+        "Knees pinched; thumb up; heels heavy",
+        "Control near wrist"
+      ],
+      "hazards": [
+        "Loose head control -> stack escape"
+      ],
+      "objectives": [
+        "Finish clean armbar",
+        "Switch to triangle/omoplata if needed"
+      ],
+      "videos": [
+        {
+          "url": "https://www.youtube.com/shorts/yIST8t91uXw"
+        }
+      ]
+    },
+    {
+      "id": "back",
+      "label": "Back",
+      "key_points": [
+        "Seatbelt; chest glued to upper back",
+        "Hooks or body triangle; control far shoulder"
+      ],
+      "hazards": [
+        "Losing seatbelt during transition",
+        "Both hooks on same side -> easy escape"
+      ],
+      "objectives": [
+        "Control and finish (RNC, bow-and-arrow)",
+        "Maintain harness through scrambles"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/eMbkVDRreIQ?t=34"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "collar_choke_bow_and_arrow_family",
+          "label": "Collar choke (bow-and-arrow family)",
+          "steps": [
+            "Feed far collar; secure seatbelt",
+            "Open angle; pull collar across neck",
+            "Finish with hips away"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Anchor their far hip",
+            "Keep far shoulder pinned"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/eMbkVDRreIQ?t=34"
+            }
+          ]
+        },
+        {
+          "id": "rear_naked_choke",
+          "label": "Rear naked choke",
+          "steps": [
+            "Seatbelt; open chin if needed",
+            "Slide choking arm; palm-to-bicep",
+            "Squeeze elbows; expand chest"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Hide choking hand",
+            "Head next to theirs to block shoulder turn"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/watch?v=cmR0Fy237mc"
+            }
+          ]
+        },
+        {
+          "id": "bow_and_arrow_choke",
+          "label": "Bow and arrow choke",
+          "steps": [
+            "Feed collar; grip pant near knee",
+            "Kick leg across body; fall to side",
+            "Extend hips and pull collar"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Keep far shoulder pinned",
+            "Angle body away for leverage"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/eMbkVDRreIQ?t=66"
+            }
+          ]
+        },
+        {
+          "id": "armbar_from_back",
+          "label": "Armbar",
+          "steps": [
+            "Trap near arm; step over head",
+            "Sit to armbar while keeping seatbelt",
+            "Pinch knees; finish"
+          ],
+          "success_to": "armbar_control",
+          "keys": [
+            "Control near wrist before stepping over"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/PkOElNNpoHk"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "butterfly_guard",
+      "label": "Butterfly guard",
+      "key_points": [
+        "Inside position; upright posture",
+        "Knees inside; active hooks"
+      ],
+      "hazards": [
+        "Letting them flatten you",
+        "Extended arms -> arm drags/passes"
+      ],
+      "objectives": [
+        "Off-balance to elevate",
+        "Sweep or transition to X-guard/closed"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/Evavx-vIKhM?t=31"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "triangle_from_butterfly_guard",
+          "label": "Triangle",
+          "steps": [
+            "Control wrist/head",
+            "Elevate; pull arm across",
+            "Lock triangle; angle off"
+          ],
+          "success_to": "butterfly_guard",
+          "keys": [
+            "Use elevation to break posture",
+            "Grab shin to adjust"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/uPl7zjoypQU?t=58"
+            }
+          ]
+        }
+      ],
+      "transitions": [
+        {
+          "id": "butterfly_hook_sweep",
+          "label": "Butterfly hook sweep",
+          "steps": [
+            "Underhook and head control",
+            "Load on hooks; elevate and turn",
+            "Come up to mount or side"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Get chest-to-chest angle first",
+            "Kick through target corner"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/Evavx-vIKhM?t=31"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "closed_guard",
+      "label": "Closed guard",
+      "key_points": [
+        "Break posture first",
+        "Create angles before attacks",
+        "Control sleeve/wrist and head"
+      ],
+      "hazards": [
+        "Letting them stand without grips",
+        "Attacking square without angle"
+      ],
+      "objectives": [
+        "Climb to high guard",
+        "Sweep to mount or submit"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/ucncduxX0eE?t=20"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "cross_collar_choke_from_closed_guard",
+          "label": "Cross-collar choke",
+          "steps": [
+            "Break posture; first grip deep palm-up",
+            "Open angle; second grip palm-up",
+            "Pull elbows to ribs; crunch knees"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "Don’t stay square; build angle first",
+            "Get first grip as deep as possible"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/geONCXGYj9Y"
+            }
+          ]
+        },
+        {
+          "id": "triangle",
+          "label": "Triangle",
+          "steps": [
+            "Break posture; control wrist",
+            "Foot on hip; pivot; leg over shoulder",
+            "Lock triangle; angle off; pull head and lift hips"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "Grab shin (not foot) to adjust",
+            "Arm across centerline"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/kXT_YKKcvHw"
+            }
+          ]
+        },
+        {
+          "id": "armbar_from_closed_guard",
+          "label": "Armbar",
+          "steps": [
+            "Control wrist/triceps",
+            "Foot on hip; pivot; hamstring bite",
+            "Thumb up; hips through"
+          ],
+          "success_to": "armbar_control",
+          "keys": [
+            "Climb high before opening",
+            "Don’t lose head control"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/ybdyDkzfQG8"
+            }
+          ]
+        },
+        {
+          "id": "omoplata",
+          "label": "Omoplata",
+          "steps": [
+            "Break posture; control wrist",
+            "Foot on hip; pivot; leg over shoulder to mat",
+            "Sit up; control belt/hip; finish by hipping through"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "Keep posture broken",
+            "Turn hips away to flatten shoulder"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/yOGbaXm3Htw?t=89"
+            }
+          ]
+        },
+        {
+          "id": "kimura_from_closed_guard",
+          "label": "Kimura",
+          "steps": [
+            "Two-on-one wrist; sit up and lock",
+            "Angle off; break posture",
+            "Finish or sweep if they resist"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "Finish easier when flat after angle"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/BPqy9gG4DYs"
+            }
+          ]
+        }
+      ],
+      "transitions": [
+        {
+          "id": "flower_sweep",
+          "label": "Flower sweep",
+          "steps": [
+            "Control sleeve and opposite pant",
+            "Open guard; load leg into armpit",
+            "Swing and chop to far corner"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Foot on sweep side traps their base",
+            "Look up and roll over far shoulder"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/NEzVVhg2p5c?t=59"
+            }
+          ]
+        },
+        {
+          "id": "scissor_sweep",
+          "label": "Scissor sweep",
+          "steps": [
+            "Collar-and-sleeve; open to knee shield",
+            "Pull sleeve; scissor legs",
+            "Come up to mount"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Cut with bottom shin; lift with top leg",
+            "Roll up and over shoulder"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/CGJ2pa0xdfM"
+            }
+          ]
+        },
+        {
+          "id": "hip_bump_sweep",
+          "label": "Hip bump sweep",
+          "steps": [
+            "Open guard; sit up to elbow then hand",
+            "Overhook head/arm",
+            "Hips up at 45° over posted hand"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Get to your hand first",
+            "Other hand over their far shoulder"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/Vx57_Bpd1rA?t=63"
+            }
+          ]
+        },
+        {
+          "id": "high_guard_back_take",
+          "label": "High-guard back take",
+          "steps": [
+            "Drag their arm across",
+            "Open, shrimp, re-lock high",
+            "Sit up; climb to back or sweep based on reaction"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Stay high on their back line",
+            "Drive weight into them"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/7943yMXAWTs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "half_guard",
+      "label": "Half guard",
+      "key_points": [
+        "Top knee shield when bottom; fight for underhook",
+        "Deny crossface; frame at collarbone"
+      ],
+      "hazards": [
+        "Crossface + far underhook -> flattened/passed",
+        "Overhooking without hip escape -> smashed"
+      ],
+      "objectives": [
+        "Recover to closed guard or come up to single",
+        "Threaten kimura/guillotine"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/qj7eAAkIhMQ?t=24"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "guillotine",
+          "label": "Guillotine",
+          "steps": [
+            "Chin strap; forearm under neck",
+            "Sit up to hip; lock high elbow if space",
+            "Close guard; crunch and lift wrists"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "Close guard to avoid shoulder pressure",
+            "Keep head under your ribs"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/qj7eAAkIhMQ?t=24"
+            }
+          ]
+        },
+        {
+          "id": "kimura_from_half_guard",
+          "label": "Kimura",
+          "steps": [
+            "Two-on-one wrist; sit up to elbow",
+            "Lock figure-four; hip escape to angle",
+            "Turn them to sweep or finish"
+          ],
+          "success_to": "side_control_top",
+          "keys": [
+            "Best when they post hand",
+            "Keep head close"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/watch?v=5F3ZM01oPVo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "half_guard_top",
+      "label": "Half guard (top)"
+    },
+    {
+      "id": "headquarters",
+      "label": "Headquarters",
+      "key_points": [
+        "Control shins/knees; posture tall",
+        "Hands on pants/shins, not mat"
+      ],
+      "hazards": [
+        "Head forward -> collar/seated sweeps",
+        "Loose sleeves -> lasso/de la Riva"
+      ],
+      "objectives": [
+        "Pin a knee; enter knee slice or smash",
+        "Angle off for toriando/x-pass"
+      ],
+      "videos": [
+        {
+          "url": "https://www.youtube.com/shorts/tGjMujFweDU"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "knee_slice",
+          "label": "Knee slice",
+          "steps": [
+            "Pin top knee; outside knee pummels",
+            "Crossface and underhook",
+            "Slice across thigh; windshield-wiper"
+          ],
+          "success_to": "side_control_top",
+          "keys": [
+            "Back heel to butt",
+            "Heavy crossface to stop reguard"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/tGjMujFweDU"
+            }
+          ]
+        },
+        {
+          "id": "smash_pass",
+          "label": "Smash pass",
+          "steps": [
+            "Reverse chest angle; staple knees",
+            "Walk hips back; switch base",
+            "Free trapped foot; settle"
+          ],
+          "success_to": "side_control_top",
+          "keys": [
+            "Pin near hip with knee",
+            "Shoulder pressure turns face away"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/vClCi_56Fxo"
+            }
+          ]
+        },
+        {
+          "id": "x_pass_to_knee_on_belly",
+          "label": "X-pass to knee-on-belly",
+          "steps": [
+            "Control both pant legs",
+            "Angle off; drag legs across",
+            "Shin across belly; toes off mat"
+          ],
+          "success_to": "knee_on_belly",
+          "keys": [
+            "Float hips to follow their frames"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/uRtD1Y4E6jw?t=33"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knee_on_belly",
+      "label": "Knee on belly",
+      "key_points": [
+        "Shin across belly; toes off mat",
+        "Collar/sleeve grips to float"
+      ],
+      "hazards": [
+        "Hips too heavy -> bridge under",
+        "Posting hands on mat -> underhooks"
+      ],
+      "objectives": [
+        "Maintain mobility; attack armbars/chokes",
+        "Drop back to side control"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/uRtD1Y4E6jw?t=33"
+        }
+      ]
+    },
+    {
+      "id": "mount",
+      "label": "Mount",
+      "key_points": [
+        "Hips heavy; knees pinch; head low",
+        "Hands wide for base; climb arms"
+      ],
+      "hazards": [
+        "Hands on mat -> hip bump",
+        "High mount without base -> bridge/roll"
+      ],
+      "objectives": [
+        "Isolate an arm",
+        "Submit or progress to back"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/KbOkHMVhnT8?t=20"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "ezequiel_choke",
+          "label": "Ezequiel choke",
+          "steps": [
+            "Feed sleeve deep; blade of forearm across neck",
+            "Hide choking wrist inside their collar",
+            "Slide forearm and compress while keeping elbow on mat",
+            "Use head/shoulder pressure to pin them in place"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Keep head low to prevent bridging",
+            "Use gi slack to increase blade pressure"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/KVnengZD1XA?t=102"
+            }
+          ]
+        },
+        {
+          "id": "cross_collar_choke",
+          "label": "Cross-collar choke",
+          "steps": [
+            "First hand deep palm-up; wrist straight",
+            "Second hand palm-up across; blades on carotids",
+            "Head to mat; pull elbows to ribs; squeeze knees"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Get first hand very deep",
+            "Keep wrists straight; pull elbows low"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/sYeKzpazoek"
+            }
+          ]
+        },
+        {
+          "id": "americana",
+          "label": "Americana",
+          "steps": [
+            "Pin wrist to mat with monkey grip",
+            "Figure-four your arms",
+            "Slide their elbow toward hip, then lift wrist to finish"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Use monkey grip (no thumb)",
+            "Elbow on their face to pin shoulder line"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/KbOkHMVhnT8?t=20"
+            }
+          ]
+        },
+        {
+          "id": "armbar",
+          "label": "Armbar",
+          "steps": [
+            "Climb to high mount; isolate arm",
+            "Step over head and sit to far side",
+            "Pinch knees; thumb up; hips through"
+          ],
+          "success_to": "armbar_control",
+          "keys": [
+            "Appears when they frame vs cross-collar",
+            "Keep knees tight and heels heavy"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/yIST8t91uXw"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open_guard",
+      "label": "Open guard",
+      "key_points": [
+        "Posture tall; elbows in",
+        "Control legs before passing"
+      ],
+      "hazards": [
+        "Head forward -> collar/arm drags",
+        "Hands on mat -> sweeps"
+      ],
+      "objectives": [
+        "Force half guard HQ or angle to pass",
+        "Deny grips and step around"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/uRtD1Y4E6jw?t=33"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "tripod_sweep",
+          "label": "Tripod sweep",
+          "steps": [
+            "Foot on hip; other foot behind knee",
+            "Control ankle; extend and pull",
+            "Come up to top"
+          ],
+          "success_to": "stand_up_top",
+          "keys": [
+            "Create groin/behind-knee lever",
+            "Stand up immediately"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/uo3F8Jc68CM"
+            }
+          ]
+        },
+        {
+          "id": "muscle_sweep",
+          "label": "Muscle sweep",
+          "steps": [
+            "Underhook leg; load their weight",
+            "Kick and rotate to mount"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Use momentum; control posting arm"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/nJ3FLY0PbVs"
+            }
+          ]
+        },
+        {
+          "id": "heel_grab_sweep",
+          "label": "Heel grab sweep",
+          "steps": [
+            "Sit up; grab heel",
+            "Pull and chop behind knee",
+            "Come up to top"
+          ],
+          "success_to": "stand_up_top",
+          "keys": [
+            "Bring knees in front of their waist for lever"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/iAXXkJssu1I?t=22"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "side_control",
+      "label": "Side control",
+      "key_points": [
+        "Control near hip and far shoulder",
+        "Head on far side; knees tight"
+      ],
+      "hazards": [
+        "Space near hips -> reguard",
+        "Reaching with hands -> underhook reversals"
+      ],
+      "objectives": [
+        "Pin and progress to mount or submissions"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/Zhh4W24rwrw?t=26"
+        }
+      ],
+      "submissions": [
+        {
+          "id": "americana_from_side_control",
+          "label": "Americana",
+          "steps": [
+            "Crossface; pin near-side wrist to mat",
+            "Figure-four; wrist to floor",
+            "Elbow to ear; paintbrush finish"
+          ],
+          "success_to": "side_control",
+          "keys": [
+            "Hit it when they bench-press",
+            "Head pressure to pin wrist"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/Zhh4W24rwrw?t=26"
+            }
+          ]
+        },
+        {
+          "id": "kimura",
+          "label": "Kimura",
+          "steps": [
+            "Switch base or turn hips away",
+            "Isolate their near arm; come to knees",
+            "Lock figure-four; step over head if available; finish"
+          ],
+          "success_to": "side_control",
+          "keys": [
+            "Use hip switch to expose elbow line",
+            "Turn their face away to kill posture"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/astb6aVjcu4"
+            },
+            {
+              "url": "https://www.youtube.com/watch?v=p-6lmaseoGI"
+            }
+          ]
+        }
+      ],
+      "transitions": [
+        {
+          "id": "step_to_mount_scrape_windshield_wiper",
+          "label": "Step to mount (scrape windshield-wiper)",
+          "steps": [
+            "Walk near knee to armpit",
+            "Scrape under near elbow",
+            "Head to mat far side; knee slides across; windshield-wiper foot"
+          ],
+          "success_to": "mount",
+          "keys": [
+            "Keep chest heavy to prevent elbow-knee escape"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/watch?v=bnODqDL9c6Q"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "side_control_top",
+      "label": "Side control (top)"
+    },
+    {
+      "id": "single_leg_x",
+      "label": "Single leg X",
+      "key_points": [
+        "Clamp knee line; heel control",
+        "Hips off to the side; toes flared"
+      ],
+      "hazards": [
+        "Loose heel -> easy backstep",
+        "Knees pointing at you -> smash"
+      ],
+      "objectives": [
+        "Off-balance to sit-up sweep",
+        "Enter x-guard or stand up"
+      ],
+      "videos": [
+        {
+          "url": "https://www.youtube.com/shorts/I3yF81xpdS0"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "single_leg_x_sweep",
+          "label": "Single leg X sweep",
+          "steps": [
+            "Clamp heel; off-balance by extending",
+            "Turn knee line; kick into pocket",
+            "Technical stand up to top"
+          ],
+          "success_to": "headquarters",
+          "keys": [
+            "Keep your knee as a frame so they can’t step over"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/I3yF81xpdS0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stand_up_top",
+      "label": "Stand-up top"
+    },
+    {
+      "id": "standing",
+      "label": "Standing",
+      "key_points": [
+        "Stance: head up, hands active",
+        "Level change before entry"
+      ],
+      "hazards": [
+        "Reaching without level change -> sprawls",
+        "Poor head position -> guillotines"
+      ],
+      "objectives": [
+        "Finish singles/doubles/ankle picks",
+        "Pull guard when needed"
+      ],
+      "videos": [
+        {
+          "url": "https://youtu.be/iHXffJ_oOaY?t=41"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "single_leg_takedown",
+          "label": "Single leg takedown",
+          "steps": [
+            "Level change; penetrate step",
+            "Shoulder tight on thigh; lock hands",
+            "Run the pipe or turn corner"
+          ],
+          "success_to": "half_guard_top",
+          "keys": [
+            "Pick the correct lead leg",
+            "Head up; tight to hips"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/6bqffTme2dU"
+            },
+            {
+              "url": "https://youtu.be/4MVuspHJHhY?t=20"
+            }
+          ]
+        },
+        {
+          "id": "double_leg_takedown",
+          "label": "Double leg takedown",
+          "steps": [
+            "Level change; drive through hips",
+            "Connect hands; lift and turn",
+            "Land past legs to side control"
+          ],
+          "success_to": "side_control_top",
+          "keys": [
+            "Chest up; head tight on ribs",
+            "Finish through angles"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/iHXffJ_oOaY?t=41"
+            }
+          ]
+        },
+        {
+          "id": "ankle_pick",
+          "label": "Ankle pick",
+          "steps": [
+            "Collar tie or shoulder control",
+            "Level change to knee; catch ankle",
+            "Drive through and finish to top"
+          ],
+          "success_to": "top_guard_half_guard",
+          "keys": [
+            "Fully break posture (drop to knee)",
+            "Don’t reach from standing height"
+          ],
+          "videos": [
+            {
+              "url": "https://youtu.be/hjwFc7FwHS4?t=106"
+            }
+          ]
+        },
+        {
+          "id": "pull_guard",
+          "label": "Pull guard",
+          "steps": [
+            "Secure collar/sleeve",
+            "Step in; sit and close legs",
+            "Break posture"
+          ],
+          "success_to": "closed_guard",
+          "keys": [
+            "End with foot on hip; opposite foot on bicep"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/IAAr_HrDkHw"
+            }
+          ]
+        },
+        {
+          "id": "collar_drag",
+          "label": "Collar drag",
+          "steps": [
+            "Collar grip; step outside",
+            "Drag collar across while sitting",
+            "Come up to back or top"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Time as they step forward",
+            "Pull diagonally"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/GVfFl6im9gw"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tech_mount",
+      "label": "Tech mount",
+      "key_points": [
+        "Knee high by head; control near arm (gift wrap)",
+        "Hips low and tight"
+      ],
+      "hazards": [
+        "Too upright -> bridge/roll",
+        "Loose gift wrap -> escape"
+      ],
+      "objectives": [
+        "Finish armbar or take back",
+        "Transition to S-mount"
+      ],
+      "videos": [
+        {
+          "url": "https://www.youtube.com/shorts/tteyC8HfpQs"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "back_take_gift_wrap",
+          "label": "Back take (gift wrap)",
+          "steps": [
+            "Gift wrap near arm",
+            "Slide knee high; open seatbelt",
+            "Take the back as they turn"
+          ],
+          "success_to": "back",
+          "keys": [
+            "Follow their turn; keep chest tight"
+          ],
+          "videos": [
+            {
+              "url": "https://www.youtube.com/shorts/tteyC8HfpQs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "top_guard_half_guard",
+      "label": "Top guard/half guard"
+    }
+  ],
+  "opponent_profiles": [
+    {
+      "id": "pressure_passer",
+      "label": "Pressure passer",
+      "posture": 0.8,
+      "counter": 0.6
+    },
+    {
+      "id": "balanced",
+      "label": "Balanced",
+      "posture": 0.6,
+      "counter": 0.5
+    }
+  ]
+}
