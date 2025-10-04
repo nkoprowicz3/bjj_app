@@ -6,26 +6,52 @@ from engine import Engine, Opponent, srs_grade, srs_due
 
 # --- App setup ---
 st.set_page_config(
-    page_title="BJJ Mental Drills",
+    page_title="Visualize BJJ",
     page_icon="🥋",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- Mobile-like CSS (lightweight, mobile-ish layout) ---
+# --- Mobile-like CSS ---
 MOBILE_CSS = """
 <style>
 #MainMenu, header, footer {visibility: hidden;}
-.block-container { max-width: 480px; padding-top: 0.5rem; padding-bottom: 3rem; }
-.stButton > button { width: 100% !important; padding: 14px 16px; border-radius: 12px; font-weight: 700; }
-.menu-card { margin: 0.6rem 0 0.2rem; }
-.menu-desc { margin-top: 0.25rem; color: #5a5a5a; font-size: 0.95rem; }
-.back-wrap .stButton > button { width: auto !important; padding: 8px 12px; font-size: 0.95rem; font-weight: 600; border-radius: 10px; }
+.block-container { max-width: 520px; padding-top: 0.5rem; padding-bottom: 3rem; }
+
+/* Buttons */
+.stButton > button {
+  width: 100% !important;
+  padding: 18px 20px;
+  border-radius: 14px;
+  font-size: 1.18rem;
+  font-weight: 800;
+  border: 1px solid #e6e6e6;
+  background: white;
+  color: #111;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.stButton > button:hover { border-color: #cfcfcf; }
+
+/* Landing layout */
+.menu-center { text-align: center; }
+.menu-card { margin: 0.75rem 0 0.25rem; text-align: center; }
+.menu-desc { margin-top: 0.35rem; color: #5a5a5a; font-size: 0.96rem; text-align: center; }
+
+/* Back button */
+.back-wrap .stButton > button {
+  width: auto !important; padding: 8px 12px; font-size: 0.95rem; font-weight: 600;
+  border-radius: 10px; white-space: nowrap;
+}
+
+/* Flow and simulate headings */
 .flow-text h1 { font-size: 2rem; text-align: center; }
 .current-pos { text-align: center; margin: 0.6rem 0 1rem; }
 .current-pos .prefix { display: block; font-size: 0.95rem; font-weight: 700; color: #666; margin-bottom: 0.2rem; }
 .current-pos .name { font-size: 1.5rem; font-weight: 800; }
 .section-title { font-weight: 800; font-size: 1.1rem; margin: 0.8rem 0 0.25rem; }
+
+/* Tagline */
+.tagline { text-align: center; color: #666; margin-top: 0.25rem; margin-bottom: 1.0rem; }
 </style>
 """
 st.markdown(MOBILE_CSS, unsafe_allow_html=True)
@@ -95,33 +121,41 @@ def render_videos(videos):
         url = v.get("url") if isinstance(v, dict) else v
         if not url:
             continue
-        # Append start param if present (converter can add later if needed)
         st.video(url)
 
 def menu_screen():
-    st.title("BJJ Mental Drills")
-    st.caption("Gi fundamentals • Mental reps with quick detail peeks")
+    # Center column layout: 1–4–1 so buttons span ~2/3 width
+    cols = st.columns([1, 4, 1])
+    with cols[1]:
+        st.markdown('<div class="menu-center">', unsafe_allow_html=True)
+        st.markdown('<h1 style="margin-bottom: 0.25rem;">Visualize BJJ</h1>', unsafe_allow_html=True)
+        st.markdown('<div class="tagline">Use visualization to study what you&apos;ve learned</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="menu-card">', unsafe_allow_html=True)
-    if st.button("Study"):
-        st.session_state.page = "study"
-        st.rerun()
-    st.markdown('<div class="menu-desc">Recall key points, submissions, and transitions from a random position. Tap to peek details.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # Study
+        st.markdown('<div class="menu-card">', unsafe_allow_html=True)
+        if st.button("Study", key="go_study"):
+            st.session_state.page = "study"
+            st.rerun()
+        st.markdown('<div class="menu-desc">Cycle through positions while testing your knowledge of key points, transitions, and submissions</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="menu-card">', unsafe_allow_html=True)
-    if st.button("Simulate"):
-        st.session_state.page = "simulate"
-        st.rerun()
-    st.markdown('<div class="menu-desc">Branching mini-matches. Choose transitions/submissions; handle counters and defenses.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # Simulate
+        st.markdown('<div class="menu-card">', unsafe_allow_html=True)
+        if st.button("Simulate", key="go_sim"):
+            st.session_state.page = "simulate"
+            st.rerun()
+        st.markdown('<div class="menu-desc">Fight in a mental match by choosing transitions and submissions (and watch out for counters and defenses!)</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="menu-card">', unsafe_allow_html=True)
-    if st.button("Flow"):
-        st.session_state.page = "flow"
-        st.rerun()
-    st.markdown('<div class="menu-desc">Position → Action → Position cadence visualization. Tap to peek details.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # Flow
+        st.markdown('<div class="menu-card">', unsafe_allow_html=True)
+        if st.button("Flow", key="go_flow"):
+            st.session_state.page = "flow"
+            st.rerun()
+        st.markdown('<div class="menu-desc">Visualize yourself in an AI-generated match</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def grade_scaled_and_store(card_prefix: str, pos_id: str, recalled_count: int, total_count: int, slider_key: str):
     if total_count <= 0:
@@ -373,12 +407,10 @@ def detail_screen():
                 if st.button(f"To: {eng.position_label(dest)}", key=f"to_pos_{dest}"):
                     nav_to_detail("position", dest)
         render_videos(a.get("videos"))
-        # Keys (from alpha CSV)
         if a.get("keys"):
             st.subheader("Keys")
             for k in a["keys"]:
                 st.write(f"• {k}")
-        # Reasons (supported by your original JSON, harmless if absent)
         if a.get("reasons"):
             st.subheader("When to use it")
             for r in a["reasons"]:
