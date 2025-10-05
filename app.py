@@ -29,6 +29,11 @@ MOBILE_CSS = """
   background: white;
   color: #111;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  white-space: nowrap;
+  display: inline-flex;           /* keeps content perfectly centered */
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;                    /* spacing if an icon is present */
 }
 .stButton > button:hover { border-color: #cfcfcf; }
 
@@ -49,6 +54,10 @@ MOBILE_CSS = """
 .current-pos .prefix { display: block; font-size: 0.95rem; font-weight: 700; color: #666; margin-bottom: 0.2rem; }
 .current-pos .name { font-size: 1.5rem; font-weight: 800; }
 .section-title { font-weight: 800; font-size: 1.1rem; margin: 0.8rem 0 0.25rem; }
+
+/* Previous-positions trail shown under current item */
+.flow-trail { margin-top: 0.25rem; color: #7a7a7a; font-size: 0.95rem; }
+.flow-trail .item { margin-top: 0.15rem; }
 
 /* Tagline */
 .tagline { text-align: center; color: #666; margin-top: 0.25rem; margin-bottom: 1.0rem; }
@@ -71,8 +80,11 @@ def init_state():
     if "srs" not in st.session_state:
         st.session_state.srs = {}
     if "sim_pos" not in st.session_state:
-        ids = st.session_state.engine.position_ids()
-        st.session_state.sim_pos = ids[0] if ids else None
+        eng = st.session_state.engine
+        # Prefer starts that can reach a submission-ending flow (not short dead-ends)
+        good = eng.positions_with_submission_paths(min_items=12)
+        cands = good if good else eng.actionable_position_ids()
+        st.session_state.sim_pos = random.choice(cands) if cands else None
     if "sim_log" not in st.session_state:
         st.session_state.sim_log = []
     if "flow_running" not in st.session_state:
@@ -81,8 +93,10 @@ def init_state():
         st.session_state.flow_seq = []
     if "flow_index" not in st.session_state:
         st.session_state.flow_index = 0
-    if "flow_speed" not in st.session_state:
-        st.session_state.flow_speed = 10
+    if "flow_speed" not in st.session_state: 
+        st.session_state.flow_speed = 4 
+    if "flow_prev_positions" not in st.session_state: 
+        st.session_state.flow_prev_positions = []
     # Study: pick an initial random position
     if "study_pos" not in st.session_state:
         ids = st.session_state.engine.position_ids()
@@ -94,6 +108,15 @@ def init_state():
         st.session_state.detail_id = None
     if "return_page" not in st.session_state:
         st.session_state.return_page = None
+    if "flow_prev_positions" not in st.session_state:
+        st.session_state.flow_prev_positions = []
+    if "flow_cache" not in st.session_state:
+        st.session_state.flow_cache = {}  # {min_items: {start_pos_id: seq}}
+    if "sim_finished" not in st.session_state:
+        st.session_state.sim_finished = False
+    if "sim_last_result" not in st.session_state:
+        st.session_state.sim_last_result = None
+
 
 def go_back():
     target = st.session_state.return_page or "menu"
@@ -123,6 +146,27 @@ def render_videos(videos):
             continue
         st.video(url)
 
+# Helper to render a button that clearly indicates it opens a details page
+def details_button(label: str, key: str, use_container_width: bool = False):
+# Use a simple, consistent marker; emoji can shift baselines on some devices
+    return st.button(f"{label} →", key=key, use_container_width=use_container_width)
+
+
+def get_precomputed_flows(max_items: int):
+    cache = st.session_state.flow_cache.get(max_items)
+    if cache is not None:
+        return cache
+    eng = st.session_state.engine
+    starts = eng.positions_with_submission_paths_max(max_items=max_items)
+    seq_map = {}
+    for pid in starts:
+        seq = eng.flow_to_submission_best(pid, max_items=max_items)
+        if seq:
+            seq_map[pid] = seq
+    st.session_state.flow_cache[max_items] = seq_map
+    return seq_map
+    
+
 def menu_screen():
     # Center column layout: 1–4–1 so buttons span ~2/3 width
     cols = st.columns([1, 4, 1])
@@ -142,6 +186,11 @@ def menu_screen():
         # Simulate
         st.markdown('<div class="menu-card">', unsafe_allow_html=True)
         if st.button("Simulate", key="go_sim"):
+            eng = st.session_state.engine
+            cands = eng.actionable_position_ids()
+            st.session_state.sim_pos = random.choice(cands) if cands else None
+            st.session_state.sim_finished = False
+            st.session_state.sim_last_result = None
             st.session_state.page = "simulate"
             st.rerun()
         st.markdown('<div class="menu-desc">Fight in a mental match by choosing transitions and submissions (and watch out for counters and defenses!)</div>', unsafe_allow_html=True)
@@ -157,14 +206,6 @@ def menu_screen():
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-def grade_scaled_and_store(card_prefix: str, pos_id: str, recalled_count: int, total_count: int, slider_key: str):
-    if total_count <= 0:
-        return
-    default_val = min(max(total_count // 2, 0), total_count)
-    val = st.slider(f"Grade your recall (0–{total_count})", 0, total_count, default_val, key=slider_key)
-    grade_0_5 = int(round((val / total_count) * 5))
-    srs_grade(st.session_state.srs, f"{card_prefix}:{pos_id}", grade_0_5)
-
 def study_screen():
     back_button()
     st.subheader("Study")
@@ -176,11 +217,21 @@ def study_screen():
         return
 
     p = eng.position(pos_id)
-    st.header(p["label"])
-    if st.button(f"Details: {p['label']}", key=f"pos_detail_{pos_id}"):
-        nav_to_detail("position", pos_id)
 
-    # Key points
+    # Centered header like Simulate
+    st.markdown(
+        f'''
+        <div class="current-pos">
+        <span class="prefix">Current position:</span>
+        <div class="name">{p["label"]}</div>
+        </div>
+        ''',
+        unsafe_allow_html=True
+    )
+
+    # — Reveal controls (stacked). No dividers between them —
+
+    # Key points (one-way reveal for now)
     if st.button("Show key points", key=f"btn_keys_{pos_id}"):
         st.session_state[f"reveal_keys_{pos_id}"] = True
     if st.session_state.get(f"reveal_keys_{pos_id}"):
@@ -189,50 +240,62 @@ def study_screen():
             st.write("Key points:")
             for k in keys:
                 st.write(f"  • {k}")
-            grade_scaled_and_store("P", pos_id, 0, len(keys), f"grade_keys_{pos_id}")
         else:
             st.info("No key points listed.")
-    st.divider()
 
-    # Submissions
-    if st.button("Show submissions", key=f"btn_subs_{pos_id}"):
-        st.session_state[f"reveal_subs_{pos_id}"] = True
-    if st.session_state.get(f"reveal_subs_{pos_id}"):
+    # Submissions toggle
+    subs_key = f"reveal_subs_{pos_id}"
+    subs_shown = st.session_state.get(subs_key, False)
+    subs_btn_label = "Hide submissions" if subs_shown else "Show submissions"
+    if st.button(subs_btn_label, key=f"btn_subs_{pos_id}"):
+        st.session_state[subs_key] = not subs_shown
+        st.rerun()
+    if st.session_state.get(subs_key):
         subs = p.get("submissions", []) or []
         if subs:
             st.write("Submissions:")
             for e in subs:
-                if st.button(e["label"], key=f"sub_{e['id']}"):
+                if details_button(e["label"], key=f"sub_{e['id']}"):
                     nav_to_detail("action", e["id"])
-            grade_scaled_and_store("SU", pos_id, 0, len(subs), f"grade_subs_{pos_id}")
         else:
             st.info("No submissions listed.")
-    st.divider()
 
-    # Transitions
-    if st.button("Show transitions", key=f"btn_trans_{pos_id}"):
-        st.session_state[f"reveal_trans_{pos_id}"] = True
-    if st.session_state.get(f"reveal_trans_{pos_id}"):
+    # Transitions toggle
+    trans_key = f"reveal_trans_{pos_id}"
+    trans_shown = st.session_state.get(trans_key, False)
+    trans_btn_label = "Hide transitions" if trans_shown else "Show transitions"
+    if st.button(trans_btn_label, key=f"btn_trans_{pos_id}"):
+        st.session_state[trans_key] = not trans_shown
+        st.rerun()
+    if st.session_state.get(trans_key):
         trans = p.get("transitions", []) or []
         if trans:
             st.write("Transitions:")
             for e in trans:
-                if st.button(e["label"], key=f"trans_{e['id']}"):
+                if details_button(e["label"], key=f"trans_{e['id']}"):
                     nav_to_detail("action", e["id"])
-            grade_scaled_and_store("TR", pos_id, 0, len(trans), f"grade_trans_{pos_id}")
         else:
             st.info("No transitions listed.")
+
+    # Single separator before bottom controls
     st.divider()
 
-    if st.button("Next position", key="study_next"):
-        ids = eng.position_ids()
-        if len(ids) > 1:
-            choices = [i for i in ids if i != pos_id]
-            st.session_state.study_pos = random.choice(choices)
-        else:
-            st.session_state.study_pos = pos_id
-        st.rerun()
+    # Bottom-right controls: spacer + two wide columns so labels don't wrap
+    spacer, col_next, col_details = st.columns([4, 120, 120])
+    with col_next:
+        if st.button("Next position", key="study_next", use_container_width=True):
+            ids = eng.position_ids()
+            if len(ids) > 1:
+                choices = [i for i in ids if i != pos_id]
+                st.session_state.study_pos = random.choice(choices)
+            else:
+                st.session_state.study_pos = pos_id
+            st.rerun()
+    with col_details:
+        if details_button(f"Details: {p['label']}", key=f"pos_detail_{pos_id}", use_container_width=True):
+            nav_to_detail("position", pos_id)
 
+    # Due reviews summary (kept; grading sliders removed)
     due_positions = len(srs_due(st.session_state.srs, "P:"))
     due_subs = len(srs_due(st.session_state.srs, "SU:"))
     due_transitions = len(srs_due(st.session_state.srs, "TR:"))
@@ -246,9 +309,20 @@ def simulate_screen():
     eng = st.session_state.engine
     opp = st.session_state.opp
 
+    # Ensure we start from a position that has actions
     pos_id = st.session_state.sim_pos
+    if (not pos_id) or (not eng.edges_for(pos_id)):
+        cands = eng.actionable_position_ids()
+        st.session_state.sim_pos = random.choice(cands) if cands else None
+        st.session_state.sim_finished = False
+        st.session_state.sim_last_result = None
+        pos_id = st.session_state.sim_pos
+
     if not pos_id or pos_id not in eng.pos_map:
         st.warning("Select a start position below to begin.")
+    elif st.session_state.get("sim_finished"):
+        st.success(st.session_state.sim_last_result["notes"] if st.session_state.sim_last_result else "Submission!")
+        # Let the user reset below; don't render current-position choice UI
     else:
         p = eng.position(pos_id)
         st.markdown(
@@ -260,7 +334,7 @@ def simulate_screen():
             ''',
             unsafe_allow_html=True
         )
-        if st.button("Details about current position", key=f"sim_pos_detail_{pos_id}"):
+        if details_button(f"Details about {eng.position_label(pos_id)}", key=f"sim_pos_detail_{pos_id}"):
             nav_to_detail("position", pos_id)
 
         # Opponent attack chance (before your action)
@@ -282,24 +356,34 @@ def simulate_screen():
             if cols[0].button("Go", key=f"go_{pos_id}"):
                 result = eng.simulate_step(pos_id, choice_labels[pick], opp)
                 st.session_state.sim_log.append({
-                    "from": pos_id,
-                    "action": pick,
-                    "outcome": result["outcome"],
-                    "notes": result["notes"],
-                    "to": result["to"]
-                })
-                st.session_state.sim_pos = result["to"]
-                st.success(f"{result['outcome'].capitalize()}: {result['notes']}")
-                st.rerun()
-            if cols[1].button(f"Details: {pick}", key=f"detail_choice_{pos_id}"):
-                nav_to_detail("action", choice_labels[pick])
+                "from": pos_id,
+                "action": pick,
+                "outcome": result["outcome"],
+                "notes": result["notes"],
+                "to": result["to"]
+            })
+                if result["outcome"] == "submitted":
+                    st.session_state.sim_finished = True
+                    st.session_state.sim_last_result = result
+                    st.success(f"Submission! {result['notes']}")
+                    st.session_state.sim_pos = None  # terminate session
+                    st.rerun()
+                else:
+                    st.session_state.sim_pos = result["to"]
+                    st.success(f"{result['outcome'].capitalize()}: {result['notes']}")
+                    st.rerun()
+            with cols[1]:
+                if details_button(f"Details: {pick}", key=f"detail_choice_{pos_id}"):
+                    nav_to_detail("action", choice_labels[pick])
 
     # Reset controls
-    ids = eng.position_ids()
+    ids = eng.positions_with_submission_paths_max(max_items=20) or eng.actionable_position_ids()
     if ids:
         pick_reset = st.selectbox("Reset to position", ids, format_func=eng.position_label, key="reset_pick")
         if st.button("Reset", key="reset_btn"):
             st.session_state.sim_pos = pick_reset
+            st.session_state.sim_finished = False
+            st.session_state.sim_last_result = None
             st.session_state.sim_log = []
             st.rerun()
 
@@ -313,26 +397,39 @@ def simulate_screen():
         for item in reversed(st.session_state.sim_log[-10:]):
             st.write(f"- {eng.position_label(item['from'])} → {item['action']} → {item['outcome']} → {eng.position_label(item['to'])} ({item['notes']})")
 
+
 def flow_screen():
     back_button()
     st.subheader("Flow")
-    st.write("Position → Action → Position every N seconds. Imagine you’re doing each step first-person.")
+    st.write("Position → Action → Position. Imagine you’re doing each step first-person.")
 
     eng = st.session_state.engine
-    ids = eng.position_ids()
-    if not ids:
+    all_ids = eng.position_ids()
+    if not all_ids:
         st.warning("No positions available.")
         return
 
-    start = st.selectbox("Start position", ids, format_func=eng.position_label, index=0, key="flow_start")
-    length = st.slider("Number of items", 10, 60, 20, key="flow_len")
-    speed = st.slider("Seconds per item", 4, 15, st.session_state.flow_speed, key="flow_speed")
+    # Controls
+    len_options = [10, 12, 15, 18, 20, 25, 30, 40, 50, 60]
+    length = st.selectbox("Number of items", len_options, index=len_options.index(20), key="flow_len")
+    speed_options = [4, 5, 6, 7, 8, 9, 10, 12, 15]
+    speed = st.selectbox("Seconds per item", speed_options, index=0, key="flow_speed")
+
+    # Precompute valid starts and sequences for selected length
+    seq_map = get_precomputed_flows(length)
+    good_starts = list(seq_map.keys())
+    if not good_starts:
+        st.info("No submission-ending flows under this maximum length. Try increasing 'Number of items'.")
+        return
+
+    start = st.selectbox("Start position", good_starts, format_func=eng.position_label, key="flow_start")
 
     cols = st.columns(2)
     if cols[0].button("Start flow", key="start_flow"):
         st.session_state.flow_running = True
-        st.session_state.flow_seq = eng.flow_sequence(start, length)
+        st.session_state.flow_seq = seq_map[start]  # precomputed sequence ending on a submission
         st.session_state.flow_index = 0
+        st.session_state.flow_prev_positions = []
         st.rerun()
     if cols[1].button("Stop", key="stop_flow"):
         st.session_state.flow_running = False
@@ -340,20 +437,44 @@ def flow_screen():
 
     placeholder = st.empty()
     if st.session_state.flow_running and st.session_state.flow_seq:
-        i = st.session_state.flow_index % len(st.session_state.flow_seq)
+        i = st.session_state.flow_index
+        if i >= len(st.session_state.flow_seq):
+            st.session_state.flow_running = False
+            st.success("Flow finished (ended on a submission).")
+            st.rerun()
+            return
+
         item = st.session_state.flow_seq[i]
         with placeholder.container():
             st.markdown('<div class="flow-text">', unsafe_allow_html=True)
             st.header(f"{item['type'].capitalize()}: {item['label']}")
             st.markdown('</div>', unsafe_allow_html=True)
-            if st.button("Details for current item", key=f"flow_detail_{i}"):
+
+            # Last one or two previous positions under current item
+            trail = st.session_state.get("flow_prev_positions", [])
+            if trail:
+                html = '<div class="flow-trail">' + ''.join(f'<div class="item">{t}</div>' for t in trail[:2]) + '</div>'
+                st.markdown(html, unsafe_allow_html=True)
+
+            # Details for whatever is currently shown
+            label = f"Details for {item['label']}"
+            btn_key = f"flow_detail_{st.session_state.flow_index}_{item['type']}_{item['id']}"
+            if details_button(label, key=btn_key, use_container_width=True):
                 if item["type"] == "position":
                     nav_to_detail("position", item["id"])
                 else:
                     nav_to_detail("action", item["id"])
+
         time.sleep(st.session_state.flow_speed)
+
+        # Update trail: record only positions
+        if item["type"] == "position":
+            prev = st.session_state.get("flow_prev_positions", [])
+            st.session_state.flow_prev_positions = ([item["label"]] + prev)[:2]
+
         st.session_state.flow_index += 1
         st.rerun()
+
 
 def detail_screen():
     back_button()
@@ -383,12 +504,12 @@ def detail_screen():
         if p.get("submissions"):
             st.subheader("Submissions from here")
             for e in p["submissions"]:
-                if st.button(e["label"], key=f"detail_sub_{e['id']}"):
+                if details_button(e["label"], key=f"detail_sub_{e['id']}"):
                     nav_to_detail("action", e["id"])
         if p.get("transitions"):
             st.subheader("Transitions from here")
             for e in p["transitions"]:
-                if st.button(e["label"], key=f"detail_trans_{e['id']}"):
+                if details_button(e["label"], key=f"detail_trans_{e['id']}"):
                     nav_to_detail("action", e["id"])
 
     else:  # action
@@ -399,12 +520,12 @@ def detail_screen():
         st.header(f"{a['label']} ({a['type']})")
         cols = st.columns(2)
         with cols[0]:
-            if st.button(f"From: {eng.position_label(a['from'])}", key=f"from_pos_{a['from']}"):
+            if details_button(f"From: {eng.position_label(a['from'])}", key=f"from_pos_{a['from']}"):
                 nav_to_detail("position", a["from"])
         dest = a.get("success_to")
         if dest and dest in eng.pos_map:
             with cols[1]:
-                if st.button(f"To: {eng.position_label(dest)}", key=f"to_pos_{dest}"):
+                if details_button(f"To: {eng.position_label(dest)}", key=f"to_pos_{dest}"):
                     nav_to_detail("position", dest)
         render_videos(a.get("videos"))
         if a.get("keys"):
@@ -442,6 +563,9 @@ def sidebar():
 
 def main():
     init_state()
+    if "flow_cache_version" not in st.session_state or st.session_state.flow_cache_version != 3:
+        st.session_state.flow_cache = {}
+        st.session_state.flow_cache_version = 3
     sidebar()
     if st.session_state.page == "menu":
         menu_screen()
