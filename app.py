@@ -81,10 +81,8 @@ def init_state():
         st.session_state.srs = {}
     if "sim_pos" not in st.session_state:
         eng = st.session_state.engine
-        # Prefer starts that can reach a submission-ending flow (not short dead-ends)
-        good = eng.positions_with_submission_paths(min_items=12)
-        cands = good if good else eng.actionable_position_ids()
-        st.session_state.sim_pos = random.choice(cands) if cands else None
+        good = eng.positions_with_submission_paths_max(max_items=20) or eng.actionable_position_ids()
+        st.session_state.sim_pos = random.choice(good) if good else None
     if "sim_log" not in st.session_state:
         st.session_state.sim_log = []
     if "flow_running" not in st.session_state:
@@ -116,6 +114,8 @@ def init_state():
         st.session_state.sim_finished = False
     if "sim_last_result" not in st.session_state:
         st.session_state.sim_last_result = None
+    if "flow_finished" not in st.session_state:
+        st.session_state.flow_finished = False
 
 
 def go_back():
@@ -148,7 +148,7 @@ def render_videos(videos):
 
 # Helper to render a button that clearly indicates it opens a details page
 def details_button(label: str, key: str, use_container_width: bool = False):
-# Use a simple, consistent marker; emoji can shift baselines on some devices
+    # Use a simple, consistent marker; emoji can shift baselines on some devices
     return st.button(f"{label} →", key=key, use_container_width=use_container_width)
 
 
@@ -304,6 +304,8 @@ def study_screen():
 def simulate_screen():
     back_button()
     st.subheader("Simulate")
+    if st.session_state.get("sim_finished"):
+        st.success("You won! Let's go again.")
     st.write("Make a choice. See the consequence. Occasionally defend an opponent attack.")
 
     eng = st.session_state.engine
@@ -320,9 +322,6 @@ def simulate_screen():
 
     if not pos_id or pos_id not in eng.pos_map:
         st.warning("Select a start position below to begin.")
-    elif st.session_state.get("sim_finished"):
-        st.success(st.session_state.sim_last_result["notes"] if st.session_state.sim_last_result else "Submission!")
-        # Let the user reset below; don't render current-position choice UI
     else:
         p = eng.position(pos_id)
         st.markdown(
@@ -364,9 +363,7 @@ def simulate_screen():
             })
                 if result["outcome"] == "submitted":
                     st.session_state.sim_finished = True
-                    st.session_state.sim_last_result = result
-                    st.success(f"Submission! {result['notes']}")
-                    st.session_state.sim_pos = None  # terminate session
+                    # keep current position; do not clear sim_pos
                     st.rerun()
                 else:
                     st.session_state.sim_pos = result["to"]
@@ -402,6 +399,8 @@ def flow_screen():
     back_button()
     st.subheader("Flow")
     st.write("Position → Action → Position. Imagine you’re doing each step first-person.")
+    if st.session_state.get("flow_finished"):
+        st.success("You won! Let's go again.")
 
     eng = st.session_state.engine
     all_ids = eng.position_ids()
@@ -427,7 +426,8 @@ def flow_screen():
     cols = st.columns(2)
     if cols[0].button("Start flow", key="start_flow"):
         st.session_state.flow_running = True
-        st.session_state.flow_seq = seq_map[start]  # precomputed sequence ending on a submission
+        st.session_state.flow_finished = False
+        st.session_state.flow_seq = seq_map[start]
         st.session_state.flow_index = 0
         st.session_state.flow_prev_positions = []
         st.rerun()
@@ -435,45 +435,47 @@ def flow_screen():
         st.session_state.flow_running = False
         st.rerun()
 
-    placeholder = st.empty()
-    if st.session_state.flow_running and st.session_state.flow_seq:
-        i = st.session_state.flow_index
-        if i >= len(st.session_state.flow_seq):
-            st.session_state.flow_running = False
-            st.success("Flow finished (ended on a submission).")
-            st.rerun()
-            return
+    # Always render the current item if a sequence exists
+    seq = st.session_state.flow_seq
+    if seq:
+        i = min(st.session_state.flow_index, len(seq) - 1)
+        item = seq[i]
 
-        item = st.session_state.flow_seq[i]
-        with placeholder.container():
-            st.markdown('<div class="flow-text">', unsafe_allow_html=True)
-            st.header(f"{item['type'].capitalize()}: {item['label']}")
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="flow-text">', unsafe_allow_html=True)
+        st.header(f"{item['type'].capitalize()}: {item['label']}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            # Last one or two previous positions under current item
-            trail = st.session_state.get("flow_prev_positions", [])
-            if trail:
-                html = '<div class="flow-trail">' + ''.join(f'<div class="item">{t}</div>' for t in trail[:2]) + '</div>'
-                st.markdown(html, unsafe_allow_html=True)
+        # Trail under the current item (previous positions)
+        trail = st.session_state.get("flow_prev_positions", [])
+        if trail:
+            html = '<div class="flow-trail">' + ''.join(f'<div class="item">{t}</div>' for t in trail[:2]) + '</div>'
+            st.markdown(html, unsafe_allow_html=True)
 
-            # Details for whatever is currently shown
-            label = f"Details for {item['label']}"
-            btn_key = f"flow_detail_{st.session_state.flow_index}_{item['type']}_{item['id']}"
-            if details_button(label, key=btn_key, use_container_width=True):
+        # Details for whatever is currently shown
+        label = f"Details for {item['label']}"
+        btn_key = f"flow_detail_{i}_{item['type']}_{item['id']}"
+        if details_button(label, key=btn_key, use_container_width=True):
+            if item["type"] == "position":
+                nav_to_detail("position", item["id"])
+            else:
+                nav_to_detail("action", item["id"])
+
+        # Auto-advance only while running
+        if st.session_state.flow_running:
+            time.sleep(st.session_state.flow_speed)
+            if i < len(seq) - 1:
+                # Update trail when leaving a position frame
                 if item["type"] == "position":
-                    nav_to_detail("position", item["id"])
-                else:
-                    nav_to_detail("action", item["id"])
-
-        time.sleep(st.session_state.flow_speed)
-
-        # Update trail: record only positions
-        if item["type"] == "position":
-            prev = st.session_state.get("flow_prev_positions", [])
-            st.session_state.flow_prev_positions = ([item["label"]] + prev)[:2]
-
-        st.session_state.flow_index += 1
-        st.rerun()
+                    prev = st.session_state.get("flow_prev_positions", [])
+                    st.session_state.flow_prev_positions = ([item["label"]] + prev)[:2]
+                st.session_state.flow_index += 1
+                st.rerun()
+            else:
+                # Finished: freeze on last frame and show banner
+                st.session_state.flow_running = False
+                st.session_state.flow_finished = True
+                st.session_state.flow_index = len(seq) - 1
+                st.rerun()
 
 
 def detail_screen():
