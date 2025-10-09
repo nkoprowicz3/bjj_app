@@ -58,7 +58,7 @@ class Engine:
             }
         }
 
-    def simulate_step(self, pos_id, edge_id, opp: Opponent):
+    def simulate_step(self, pos_id, edge_id, opp: Opponent, success_prob=None):
         # Find chosen edge in current position
         edges = self.edges_for(pos_id)
         edge = next((e for e in edges if e["id"] == edge_id), None)
@@ -67,20 +67,23 @@ class Engine:
 
         atype = self.action_type(edge_id) or "transition"
 
-        # Basic success model
-        base = 0.65
-        risk = 0.15 + 0.5 * opp.counter
-        success = base - risk * random.random()
+        # Decide success
+        if success_prob is not None:
+            succeeded = (random.random() < float(success_prob))
+        else:
+            # original heuristic
+            base = 0.65
+            risk = 0.15 + 0.5 * opp.counter
+            succeeded = (base - risk * random.random()) > 0.5
 
         # Submissions are terminal if successful
         if atype == "submission":
-            if success > 0.5:
+            if succeeded:
                 return {
                     "outcome": "submitted",
                     "to": pos_id,  # terminal; we don't advance
                     "notes": f"You finish {edge.get('label','the submission')}."
                 }
-            # if there are counters defined, they may still send you to another position
             counters = edge.get("counters", [])
             if counters:
                 c = random.choice(counters)
@@ -89,11 +92,10 @@ class Engine:
                     "to": c["result_position"],
                     "notes": c.get("trigger", "They counter your attempt.")
                 }
-            # Missed submission but no counter -> stay
             return {"outcome": "stalled", "to": pos_id, "notes": "Attack defended; reset and keep control."}
 
-        # Transitions: normal movement
-        if success > 0.5:
+        # Transitions
+        if succeeded:
             return {"outcome": "success", "to": edge.get("success_to", pos_id), "notes": "Clean execution."}
 
         counters = edge.get("counters", [])

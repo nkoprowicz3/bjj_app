@@ -18,24 +18,47 @@ MOBILE_CSS = """
 #MainMenu, header, footer {visibility: hidden;}
 .block-container { max-width: 520px; padding-top: 0.5rem; padding-bottom: 3rem; }
 
-/* Buttons */
+/* Buttons — base sizing/shape only (no colors here) */
 .stButton > button {
   width: 100% !important;
   padding: 18px 20px;
   border-radius: 14px;
   font-size: 1.18rem;
   font-weight: 800;
-  border: 1px solid #e6e6e6;
-  background: white;
-  color: #111;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   white-space: nowrap;
-  display: inline-flex;           /* keeps content perfectly centered */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;                    /* spacing if an icon is present */
+  gap: 0.5rem;
+  border-width: 1px;
+  border-style: solid;
 }
-.stButton > button:hover { border-color: #cfcfcf; }
+
+/* Secondary (inactive) buttons — white */
+.stButton > button[data-testid="baseButton-secondary"],
+.stButton > button[kind="secondary"] {
+  background: #ffffff !important;
+  border-color: #e6e6e6 !important;
+  color: #111111 !important;
+}
+.stButton > button[data-testid="baseButton-secondary"]:hover,
+.stButton > button[kind="secondary"]:hover {
+  border-color: #cfcfcf !important;
+}
+
+/* Primary (active) buttons — light blue */
+.stButton > button[data-testid="baseButton-primary"],
+.stButton > button[kind="primary"] {
+  background: #eaf4ff !important;
+  border-color: #b6dcff !important;
+  color: #0b3d91 !important;
+}
+.stButton > button[data-testid="baseButton-primary"]:hover,
+.stButton > button[kind="primary"]:hover {
+  background: #d8ecff !important;
+  border-color: #9ccfff !important;
+}
 
 /* Landing layout */
 .menu-center { text-align: center; }
@@ -44,8 +67,12 @@ MOBILE_CSS = """
 
 /* Back button */
 .back-wrap .stButton > button {
-  width: auto !important; padding: 8px 12px; font-size: 0.95rem; font-weight: 600;
-  border-radius: 10px; white-space: nowrap;
+  width: auto !important;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 /* Flow and simulate headings */
@@ -63,6 +90,7 @@ MOBILE_CSS = """
 .tagline { text-align: center; color: #666; margin-top: 0.25rem; margin-bottom: 1.0rem; }
 </style>
 """
+
 st.markdown(MOBILE_CSS, unsafe_allow_html=True)
 
 @st.cache_data
@@ -116,6 +144,8 @@ def init_state():
         st.session_state.sim_last_result = None
     if "flow_finished" not in st.session_state:
         st.session_state.flow_finished = False
+    if "sim_success_prob" not in st.session_state:
+        st.session_state.sim_success_prob = 0.75  # default 75%
 
 
 def go_back():
@@ -230,12 +260,17 @@ def study_screen():
     )
 
     # — Reveal controls (stacked). No dividers between them —
+    
+    # Key points toggle
+    keys_key = f"reveal_keys_{pos_id}"
+    keys_shown = st.session_state.get(keys_key, False)
+    keys_btn_label = "Hide key points" if keys_shown else "Show key points"
+    if st.button(keys_btn_label, key=f"btn_keys_{pos_id}", type=("primary" if keys_shown else "secondary")):
+        st.session_state[keys_key] = not keys_shown
+        st.rerun()
 
-    # Key points (one-way reveal for now)
-    if st.button("Show key points", key=f"btn_keys_{pos_id}"):
-        st.session_state[f"reveal_keys_{pos_id}"] = True
-    if st.session_state.get(f"reveal_keys_{pos_id}"):
-        keys = p.get("key_points", [])
+    if st.session_state.get(keys_key):
+        keys = p.get("key_points", []) or []
         if keys:
             st.write("Key points:")
             for k in keys:
@@ -247,9 +282,10 @@ def study_screen():
     subs_key = f"reveal_subs_{pos_id}"
     subs_shown = st.session_state.get(subs_key, False)
     subs_btn_label = "Hide submissions" if subs_shown else "Show submissions"
-    if st.button(subs_btn_label, key=f"btn_subs_{pos_id}"):
+    if st.button(subs_btn_label, key=f"btn_subs_{pos_id}", type=("primary" if subs_shown else "secondary")):
         st.session_state[subs_key] = not subs_shown
         st.rerun()
+
     if st.session_state.get(subs_key):
         subs = p.get("submissions", []) or []
         if subs:
@@ -264,9 +300,10 @@ def study_screen():
     trans_key = f"reveal_trans_{pos_id}"
     trans_shown = st.session_state.get(trans_key, False)
     trans_btn_label = "Hide transitions" if trans_shown else "Show transitions"
-    if st.button(trans_btn_label, key=f"btn_trans_{pos_id}"):
+    if st.button(trans_btn_label, key=f"btn_trans_{pos_id}", type=("primary" if trans_shown else "secondary")):
         st.session_state[trans_key] = not trans_shown
         st.rerun()
+
     if st.session_state.get(trans_key):
         trans = p.get("transitions", []) or []
         if trans:
@@ -353,7 +390,12 @@ def simulate_screen():
             pick = st.radio("Choose your action", list(choice_labels.keys()), key=f"choice_{pos_id}")
             cols = st.columns(2)
             if cols[0].button("Go", key=f"go_{pos_id}"):
-                result = eng.simulate_step(pos_id, choice_labels[pick], opp)
+                result = eng.simulate_step(
+                            pos_id,
+                            choice_labels[pick],
+                            opp,
+                            success_prob=st.session_state.sim_success_prob,
+                        )
                 st.session_state.sim_log.append({
                 "from": pos_id,
                 "action": pick,
@@ -554,14 +596,19 @@ def detail_screen():
 
 def sidebar():
     st.sidebar.header("Settings")
-    st.sidebar.write("Opponent profile:")
-    label = st.sidebar.selectbox("Style", ["Pressure passer", "Balanced"], index=0)
-    if label == "Pressure passer":
-        st.session_state.opp = Opponent(id="pressure_passer", posture=0.8, counter=0.6, label=label)
-    else:
-        st.session_state.opp = Opponent(id="balanced", posture=0.6, counter=0.5, label=label)
+
+    # Simulate
+    st.sidebar.subheader("Simulate")
+    choice = st.sidebar.selectbox(
+        "Chances of transition/submission success",
+        ["50%", "75%", "100%"],
+        index=1,  # default 75%
+    )
+    st.session_state.sim_success_prob = int(choice.strip("%")) / 100.0
+
     st.sidebar.divider()
     st.sidebar.markdown("Tips: Tap items to open details. Videos embed from your CSV links.")
+
 
 def main():
     init_state()
