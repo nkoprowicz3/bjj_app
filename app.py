@@ -88,6 +88,15 @@ MOBILE_CSS = """
 
 /* Tagline */
 .tagline { text-align: center; color: #666; margin-top: 0.25rem; margin-bottom: 1.0rem; }
+
+/* History box */
+.history-box {
+border: 1px solid #e6e6e6;
+border-radius: 12px;
+padding: 12px 14px;
+margin: 0.5rem 0 0.75rem;
+background: #fafafa;
+}
 </style>
 """
 
@@ -415,6 +424,16 @@ def simulate_screen():
                 if details_button(f"Details: {pick}", key=f"detail_choice_{pos_id}"):
                     nav_to_detail("action", choice_labels[pick])
 
+    # History (max 3, newest first), boxed
+    st.markdown('<div class="history-box">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title" style="margin-top:0;">History</div>', unsafe_allow_html=True)
+    if st.session_state.sim_log:
+        for item in reversed(st.session_state.sim_log[-3:]):
+            st.write(f"- {eng.position_label(item['from'])} → {item['action']} → {item['outcome']} → {eng.position_label(item['to'])} ({item['notes']})")
+    else:
+        st.caption("No history yet")
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # Reset controls
     ids = eng.positions_with_submission_paths_max(max_items=20) or eng.actionable_position_ids()
     if ids:
@@ -429,12 +448,6 @@ def simulate_screen():
     if st.button("Clear history", key="clear_log"):
         st.session_state.sim_log = []
         st.rerun()
-
-    # History (newest first)
-    if st.session_state.sim_log:
-        st.markdown('<div class="section-title">History</div>', unsafe_allow_html=True)
-        for item in reversed(st.session_state.sim_log[-10:]):
-            st.write(f"- {eng.position_label(item['from'])} → {item['action']} → {item['outcome']} → {eng.position_label(item['to'])} ({item['notes']})")
 
 
 def flow_screen():
