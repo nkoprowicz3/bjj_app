@@ -3,6 +3,8 @@ import time
 import random
 import streamlit as st
 from engine import Engine, Opponent, srs_grade, srs_due
+import streamlit.components.v1 as components
+from pyvis.network import Network
 
 # --- App setup ---
 st.set_page_config(
@@ -155,6 +157,49 @@ def init_state():
         st.session_state.flow_finished = False
     if "sim_success_prob" not in st.session_state:
         st.session_state.sim_success_prob = 0.75  # default 75%
+    if "modal" not in st.session_state:
+        st.session_state.modal = {"open": False}
+    if "flowchart_context" not in st.session_state:
+        st.session_state.flowchart_context = None
+    if "flowchart_edge_highlight" not in st.session_state:
+        st.session_state.flowchart_edge_highlight = None
+
+
+def handle_flowchart_click_param():
+    # New API (dict-like proxy)
+    qp = getattr(st, "query_params", None)
+
+    # Read params
+    if qp is not None:
+        fc_id = qp.get("fc_click")
+        fc_type = qp.get("fc_type")
+    else:
+        # Fallback for older Streamlit
+        params = st.experimental_get_query_params()
+        fc_id = (params.get("fc_click") or [None])[0]
+        fc_type = (params.get("fc_type") or [None])[0]
+
+    if not fc_id or not fc_type:
+        return
+
+    # Clear the params so we don't loop
+    if qp is not None:
+        for k in ("fc_click", "fc_type", "page"):
+            if k in st.query_params:
+                del st.query_params[k]
+    else:
+        st.experimental_set_query_params()  # clear
+
+    # Open the quick menu centered on the clicked node
+    st.session_state.page = "flowchart"
+    st.session_state.flowchart_context = {"type": fc_type, "id": fc_id}
+    eng = st.session_state.engine
+    if fc_type == "position":
+        label = eng.position_label(fc_id)
+    else:
+        a = eng.action(fc_id)
+        label = a["label"] if a else fc_id
+    open_quick_menu(fc_type, fc_id, label)
 
 
 def go_back():
@@ -163,11 +208,13 @@ def go_back():
     st.session_state.return_page = None
     st.rerun()
 
+
 def back_button():
     st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
     if st.button("← Back"):
         go_back()
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 def nav_to_detail(entity_type: str, entity_id: str):
     st.session_state.return_page = st.session_state.page
@@ -175,6 +222,56 @@ def nav_to_detail(entity_type: str, entity_id: str):
     st.session_state.detail_id = entity_id
     st.session_state.page = "detail"
     st.rerun()
+
+
+def nav_to_flowchart(entity_type: str, entity_id: str):
+    st.session_state.flowchart_context = {"type": entity_type, "id": entity_id}
+    st.session_state.page = "flowchart"
+    st.rerun()
+
+
+def open_quick_menu(entity_type: str, entity_id: str, label: str):
+    st.session_state.modal = {"open": True, "type": entity_type, "id": entity_id, "label": label}
+
+
+def quick_menu_overlay():
+    modal = st.session_state.get("modal") or {}
+    if not modal.get("open"):
+        return
+
+    title_text = f'Open "{modal.get("label","")}"'
+
+    def body():
+        col1, col2, col3 = st.columns(3)
+        if col1.button("See details", key="vbjj_modal_details"):
+            et, eid = modal["type"], modal["id"]
+            st.session_state.modal["open"] = False
+            nav_to_detail("position" if et == "position" else "action", eid)
+            st.stop()
+        if col2.button("See flowchart", key="vbjj_modal_flow"):
+            et, eid = modal["type"], modal["id"]
+            st.session_state.modal["open"] = False
+            a = st.session_state.engine.action(eid) if et != "position" else None
+            st.session_state.flowchart_edge_highlight = a["id"] if a and a.get("type") == "transition" else None
+            nav_to_flowchart(et, eid)
+            st.stop()
+        if col3.button("Back", key="vbjj_modal_back"):
+            st.session_state.modal["open"] = False
+            st.rerun()
+
+    if hasattr(st, "dialog"):
+        @st.dialog(title_text, width="small")
+        def _dlg():
+            body()
+        _dlg()  # open the dialog
+    elif hasattr(st, "experimental_dialog"):
+        with st.experimental_dialog(title_text):
+            body()
+    else:
+        # Very old Streamlit fallback: inline block (not a true overlay)
+        with st.container(border=True):
+            st.write(title_text)
+            body()
 
 def render_videos(videos):
     if not videos:
@@ -184,6 +281,7 @@ def render_videos(videos):
         if not url:
             continue
         st.video(url)
+
 
 # Helper to render a button that clearly indicates it opens a details page
 def details_button(label: str, key: str, use_container_width: bool = False):
@@ -204,6 +302,173 @@ def get_precomputed_flows(max_items: int):
             seq_map[pid] = seq
     st.session_state.flow_cache[max_items] = seq_map
     return seq_map
+
+
+def build_flowchart_html(eng, focus_type, focus_id, highlight_transition_id=None):
+    # Nodes:
+    # - Positions as boxes
+    # - Submissions as diamonds
+    # Edges:
+    # - Transition: pos -> pos (labeled)
+    # - Submission: pos -> submission (labeled, red)
+    # - Submission success_to (if any): submission -> pos (unlabeled, dashed)
+    net = Network(height="650px", width="100%", bgcolor="#ffffff", font_color="#111")
+    net.barnes_hut()
+
+    # Interaction and controls (adds +/- in the corner)
+    opts = {
+            "interaction": {
+                "navigationButtons": True,
+                "keyboard": {"enabled": True, "bindToWindow": True},
+                "zoomView": True,
+                "dragView": True,
+            },
+            "physics": {
+                "solver": "forceAtlas2Based",
+                "stabilization": {"enabled": True, "iterations": 600},
+            },
+            "nodes": {"font": {"size": 16}},
+            "edges": {
+                "arrows": {"to": {"enabled": True, "scaleFactor": 0.6}},
+                "smooth": {"type": "dynamic"},
+                "font": {"size": 12, "align": "horizontal"},
+            },
+        }
+    net.set_options(json.dumps(opts))
+    
+    # Build nodes
+    pos_ids = set(eng.pos_map.keys())
+    for pid, pdata in eng.pos_map.items():
+        nid = f"pos:{pid}"
+        is_focus = (focus_type == "position" and focus_id == pid)
+        net.add_node(
+            nid,
+            label=pdata.get("label", pid),
+            title=pdata.get("label", pid),
+            color="#eaf4ff",
+            borderWidth=3 if is_focus else 1,
+            shape="box",
+            size=28 if is_focus else 20
+        )
+
+    # Only submissions are nodes; transitions are edges
+    for aid, adata in eng.action_map.items():
+        if adata.get("type") == "submission":
+            nid = f"act:{aid}"
+            is_focus = (focus_type != "position" and focus_id == aid)
+            net.add_node(
+                nid,
+                label=adata.get("label", aid),
+                title=f"Submission: {adata.get('label', aid)}",
+                color="#ffeaea",
+                shape="diamond",
+                size=26 if is_focus else 18,
+                borderWidth=3 if is_focus else 1
+            )
+
+    # Build edges
+    # Transitions: pos -> pos (greenish)
+    for aid, adata in eng.action_map.items():
+        if adata.get("type") == "transition":
+            src = adata.get("from")
+            dst = adata.get("success_to")
+            if not src or not dst or (src not in pos_ids) or (dst not in pos_ids):
+                continue
+            eid = f"tr:{aid}"
+            is_high = (highlight_transition_id == aid)
+            net.add_edge(
+                f"pos:{src}",
+                f"pos:{dst}",
+                label=adata.get("label", aid),
+                color="#2a7de1",
+                width=4 if is_high else 1.5,
+                dashes=False
+            )
+
+    # Submissions: pos -> submission (red)
+    for aid, adata in eng.action_map.items():
+        if adata.get("type") == "submission":
+            src = adata.get("from")
+            if src not in pos_ids:
+                continue
+            net.add_edge(
+                f"pos:{src}",
+                f"act:{aid}",
+                label=adata.get("label", aid),
+                color="#c92a2a",
+                width=2
+            )
+            # If success_to exists, link submission -> pos (dashed, grey)
+            dst = adata.get("success_to")
+            if dst and dst in pos_ids:
+                net.add_edge(
+                    f"act:{aid}",
+                    f"pos:{dst}",
+                    color="#888888",
+                    width=1,
+                    dashes=True
+                )
+
+    # Generate HTML and inject "focus" behavior
+    html = net.generate_html(notebook=False)
+
+    # Choose a node to focus
+    if focus_type == "position":
+        focus_node = f"pos:{focus_id}"
+    elif focus_type == "action":
+        # Center on submission nodes if submission, otherwise center on the 'from' position if it was a transition
+        a = eng.action(focus_id)
+        if a and a.get("type") == "submission":
+            focus_node = f"act:{focus_id}"
+        elif a and a.get("type") == "transition":
+            focus_node = f"pos:{a.get('from')}"
+        else:
+            # fallback
+            focus_node = f"pos:{eng.position_ids()[0]}" if eng.position_ids() else None
+    else:
+        focus_node = f"pos:{eng.position_ids()[0]}" if eng.position_ids() else None
+
+    if focus_node:
+        script = f"""
+        <script type="text/javascript">
+        window.addEventListener('load', function() {{
+          if (typeof network !== 'undefined') {{
+            network.once('stabilizationIterationsDone', function () {{
+              try {{
+                network.fit({{ nodes: ['{focus_node}'], animation: true }});
+                network.selectNodes(['{focus_node}']);
+              }} catch(e) {{}}
+            }});
+          }}
+        }});
+        </script>
+        """
+        html = html.replace("</body>", script + "</body>")
+
+    click_js = """
+    <script type="text/javascript">
+    window.addEventListener('load', function() {
+    if (typeof network !== 'undefined') {
+        network.on("click", function(params) {
+        if (params.nodes && params.nodes.length > 0) {
+            const nid = String(params.nodes[0]); // "pos:..." or "act:..."
+            const parts = nid.split(":");
+            const kind = (parts[0] === "act") ? "action" : "position";
+            const id = parts.slice(1).join(":");
+            try {
+            // Notify parent page (Streamlit) to update query params
+            window.parent.postMessage({ __vbjj_click: true, id: id, kind: kind }, "*");
+            } catch (e) {
+            console.warn("postMessage failed:", e);
+            }
+        }
+        });
+    }
+    });
+    </script>
+    """
+    html = html.replace("</body>", click_js + "</body>")
+    return html
     
 
 def menu_screen():
@@ -243,6 +508,14 @@ def menu_screen():
         st.markdown('<div class="menu-desc">Visualize yourself in an AI-generated match</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Search
+        st.markdown('<div class="menu-card">', unsafe_allow_html=True)
+        if st.button("Search techniques", key="go_search"):
+            st.session_state.page = "search"
+            st.rerun()
+        st.markdown('<div class="menu-desc">Find any transition or submission and jump to details or flowchart</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 def study_screen():
@@ -301,7 +574,7 @@ def study_screen():
             st.write("Submissions:")
             for e in subs:
                 if details_button(e["label"], key=f"sub_{e['id']}"):
-                    nav_to_detail("action", e["id"])
+                    open_quick_menu("action", e["id"], e["label"])
         else:
             st.info("No submissions listed.")
 
@@ -319,7 +592,7 @@ def study_screen():
             st.write("Transitions:")
             for e in trans:
                 if details_button(e["label"], key=f"trans_{e['id']}"):
-                    nav_to_detail("action", e["id"])
+                    open_quick_menu("action", e["id"], e["label"])
         else:
             st.info("No transitions listed.")
 
@@ -339,7 +612,7 @@ def study_screen():
             st.rerun()
     with col_details:
         if details_button(f"Details: {p['label']}", key=f"pos_detail_{pos_id}", use_container_width=True):
-            nav_to_detail("position", pos_id)
+            open_quick_menu("position", pos_id, p['label'])
 
     # Due reviews summary (kept; grading sliders removed)
     due_positions = len(srs_due(st.session_state.srs, "P:"))
@@ -380,7 +653,7 @@ def simulate_screen():
             unsafe_allow_html=True
         )
         if details_button(f"Details about {eng.position_label(pos_id)}", key=f"sim_pos_detail_{pos_id}"):
-            nav_to_detail("position", pos_id)
+            open_quick_menu("position", pos_id, p["label"])
 
         # Opponent attack chance (before your action)
         atk = eng.maybe_opponent_attack(pos_id, opp)
@@ -422,7 +695,7 @@ def simulate_screen():
                     st.rerun()
             with cols[1]:
                 if details_button(f"Details: {pick}", key=f"detail_choice_{pos_id}"):
-                    nav_to_detail("action", choice_labels[pick])
+                    open_quick_menu("action", choice_labels[pick], pick)
 
     # History (max 3, newest first), boxed
     st.markdown('<div class="history-box">', unsafe_allow_html=True)
@@ -448,6 +721,55 @@ def simulate_screen():
     if st.button("Clear history", key="clear_log"):
         st.session_state.sim_log = []
         st.rerun()
+
+
+def flowchart_screen():
+    back_button()
+    st.subheader("Flowchart")
+    st.caption("Pan/zoom with touch or mouse. Use the + / − buttons in the corner to zoom.")
+
+    eng = st.session_state.engine
+    if not eng.position_ids():
+        st.info("No positions available.")
+        return
+
+    ctx = st.session_state.get("flowchart_context") or {}
+    ftype = ctx.get("type") or "position"
+    fid = ctx.get("id")
+    if not fid:
+        # default to any position if nothing selected
+        fid = eng.position_ids()[0]
+        ftype = "position"
+
+    html = build_flowchart_html(eng, ftype, fid, st.session_state.get("flowchart_edge_highlight"))
+    components.html(html, height=650, scrolling=True)
+    components.html("""
+        <script>
+        (function () {
+        // Only add once (on the PARENT window)
+        try {
+            if (window.parent && !window.parent.__vbjj_listener_added) {
+            window.parent.__vbjj_listener_added = true;
+            window.parent.addEventListener('message', function (event) {
+                var data = event.data || {};
+                if (data && data.__vbjj_click) {
+                try {
+                    var url = new URL(window.parent.location.href);
+                    url.searchParams.set('fc_click', data.id);
+                    url.searchParams.set('fc_type', data.kind);
+                    url.searchParams.set('page', 'flowchart');
+                    // Navigate parent (triggers Streamlit rerun and your handler)
+                    window.parent.location.replace(url.toString());
+                } catch (e) { console.warn('URL update failed', e); }
+                }
+            });
+            }
+        } catch (e) {
+            console.warn('Listener install failed', e);
+        }
+        })();
+        </script>
+        """, height=0)
 
 
 def flow_screen():
@@ -511,9 +833,9 @@ def flow_screen():
         btn_key = f"flow_detail_{i}_{item['type']}_{item['id']}"
         if details_button(label, key=btn_key, use_container_width=True):
             if item["type"] == "position":
-                nav_to_detail("position", item["id"])
+                open_quick_menu("position", item["id"], item['label'])
             else:
-                nav_to_detail("action", item["id"])
+                open_quick_menu("action", item["id"], item['label'])
 
         # Auto-advance only while running
         if st.session_state.flow_running:
@@ -531,6 +853,53 @@ def flow_screen():
                 st.session_state.flow_finished = True
                 st.session_state.flow_index = len(seq) - 1
                 st.rerun()
+
+
+def search_screen():
+    back_button()
+    st.subheader("Search techniques")
+
+    eng = st.session_state.engine
+
+    # Controls
+    q = st.text_input("Search", placeholder="Type a technique name…", key="tech_search").strip().lower()
+    type_opt = st.selectbox("Type", ["All", "Transitions", "Submissions"], index=0, key="tech_type")
+
+    # Build and sort full list of actions
+    acts = list(eng.action_map.values())
+
+    # Filter by type
+    if type_opt != "All":
+        acts = [a for a in acts if a.get("type") == type_opt[:-1].lower()]  # "Transitions" -> "transition", "Submissions" -> "submission"
+
+    # Filter by query (match technique label or source position label)
+    if q:
+        def match(a):
+            return (q in a.get("label","").lower()) or (q in eng.position_label(a.get("from","")).lower())
+        acts = [a for a in acts if match(a)]
+
+    # Sort: by source position, then type (transitions first), then label
+    def sort_key(a):
+        return (
+            eng.position_label(a.get("from","")).lower(),
+            0 if a.get("type") == "transition" else 1,
+            a.get("label","").lower()
+        )
+    acts.sort(key=sort_key)
+
+    # Render grouped by source position
+    if not acts:
+        st.info("No techniques match your search.")
+        return
+
+    grp = None
+    for a in acts:
+        src = eng.position_label(a["from"])
+        if grp != src:
+            grp = src
+            st.markdown(f"From {src}:")
+        if st.button(f"{a['label']} ({a['type']}) →", key=f"search_{a['id']}"):
+            open_quick_menu("action", a["id"], a["label"])
 
 
 def detail_screen():
@@ -562,12 +931,12 @@ def detail_screen():
             st.subheader("Submissions from here")
             for e in p["submissions"]:
                 if details_button(e["label"], key=f"detail_sub_{e['id']}"):
-                    nav_to_detail("action", e["id"])
+                    open_quick_menu("action", e["id"], e["label"])
         if p.get("transitions"):
             st.subheader("Transitions from here")
             for e in p["transitions"]:
                 if details_button(e["label"], key=f"detail_trans_{e['id']}"):
-                    nav_to_detail("action", e["id"])
+                    open_quick_menu("action", e["id"], e["label"])
 
     else:  # action
         a = eng.action(eid)
@@ -578,12 +947,12 @@ def detail_screen():
         cols = st.columns(2)
         with cols[0]:
             if details_button(f"From: {eng.position_label(a['from'])}", key=f"from_pos_{a['from']}"):
-                nav_to_detail("position", a["from"])
+                open_quick_menu("position", a["from"], eng.position_label(a["from"]))
         dest = a.get("success_to")
         if dest and dest in eng.pos_map:
             with cols[1]:
                 if details_button(f"To: {eng.position_label(dest)}", key=f"to_pos_{dest}"):
-                    nav_to_detail("position", dest)
+                    open_quick_menu("position", dest, eng.position_label(dest))
         render_videos(a.get("videos"))
         if a.get("keys"):
             st.subheader("Keys")
@@ -625,6 +994,7 @@ def sidebar():
 
 def main():
     init_state()
+    handle_flowchart_click_param()
     if "flow_cache_version" not in st.session_state or st.session_state.flow_cache_version != 3:
         st.session_state.flow_cache = {}
         st.session_state.flow_cache_version = 3
@@ -639,9 +1009,14 @@ def main():
         flow_screen()
     elif st.session_state.page == "detail":
         detail_screen()
+    elif st.session_state.page == "flowchart":
+        flowchart_screen()
+    elif st.session_state.page == "search":
+        search_screen()
     else:
         st.session_state.page = "menu"
         st.rerun()
+    quick_menu_overlay()
 
 if __name__ == "__main__":
     main()
